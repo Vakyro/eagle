@@ -158,7 +158,7 @@ export default function MyQueuePage() {
         </div>
       </div>
 
-      <div className="content-container py-6 space-y-6">
+      <div className="content-container py-6 space-y-6 bottom-nav-spacing">
         {allQueues.length > 0 ? (
           <>
             {allQueues.length > 1 && (

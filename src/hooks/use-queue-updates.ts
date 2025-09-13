@@ -26,7 +26,7 @@ export function useQueueUpdates(queueData: QueueData | null) {
 
     // Show browser notification if supported and permission granted
     if ("Notification" in window && Notification.permission === "granted") {
-      new Notification("QueueUp Update", {
+      new Notification("Eagle Update", {
         body: update.message,
         icon: "/icon-192.png",
         badge: "/icon-192.png",

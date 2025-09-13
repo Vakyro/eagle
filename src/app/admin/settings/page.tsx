@@ -65,7 +65,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <div className="content-container py-6 space-y-4">
+      <div className="content-container py-6 space-y-4 bottom-nav-spacing">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

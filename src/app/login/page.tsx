@@ -31,9 +31,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#fbfbfe] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#050315] mb-2">QueueUp</h1>
+          <h1 className="text-3xl font-bold text-[#050315] mb-2">Eagle</h1>
           <p className="text-gray-600">Sign in to your account</p>
         </div>
 

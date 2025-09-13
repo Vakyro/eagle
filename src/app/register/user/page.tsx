@@ -40,7 +40,7 @@ export default function UserRegisterPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-[#050315]">Create Account</h1>
-            <p className="text-gray-600">Join QueueUp as a user</p>
+            <p className="text-gray-600">Join Eagle as a user</p>
           </div>
         </div>
 

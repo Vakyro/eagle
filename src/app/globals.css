@@ -51,14 +51,14 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.385 0.185 248.2);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.85 0.12 85.3);
+  --secondary-foreground: oklch(0.145 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: oklch(0.85 0.12 85.3);
+  --accent-foreground: oklch(0.145 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -118,5 +118,47 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .bg-eagle-blue {
+    background-color: #2772ce;
+  }
+  .bg-eagle-gold {
+    background-color: #ddc248;
+  }
+  .text-eagle-blue {
+    color: #2772ce;
+  }
+  .text-eagle-gold {
+    color: #ddc248;
+  }
+  .border-eagle-blue {
+    border-color: #2772ce;
+  }
+  .border-eagle-gold {
+    border-color: #ddc248;
+  }
+  .hover\:bg-eagle-blue:hover {
+    background-color: #2058a3;
+  }
+  .hover\:bg-eagle-gold:hover {
+    background-color: #c7ae3e;
+  }
+  .content-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  .service-card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200;
+  }
+  .mobile-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bottom-nav-spacing {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
 }
