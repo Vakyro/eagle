@@ -12,6 +12,8 @@ export function PWAHead() {
       <meta name="msapplication-TileColor" content="#2772ce" />
       <meta name="msapplication-tap-highlight" content="no" />
 
+      <link rel="manifest" href="/manifest.json" />
+
       {/* Apple Touch Icons */}
       <link rel="apple-touch-icon" sizes="152x152" href="/icon-192.jpg" />
       <link rel="apple-touch-icon" sizes="180x180" href="/icon-192.jpg" />

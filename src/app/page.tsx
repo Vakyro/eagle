@@ -4,10 +4,13 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ServiceCard } from "@/components/service-card"
 import { BottomNav } from "@/components/bottom-nav"
+import { RestaurantFiltersModal } from "@/components/restaurant-filters"
+import { RecommendedRestaurants } from "@/components/recommended-restaurants"
 import { useAuth } from "@/contexts/AuthContext"
 import { serviceService } from "@/lib/database"
 import { estimateWaitTime } from "@/lib/queue-management"
 import type { Service } from "@/lib/supabase"
+import type { RecommendedRestaurant } from "@/lib/restaurant-recommendations"
 import { Search, MapPin, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -21,6 +24,7 @@ export default function HomePage() {
   const [services, setServices] = useState<ServiceWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [recommendations, setRecommendations] = useState<RecommendedRestaurant[]>([])
   const { user, isLoading, logout: authLogout } = useAuth()
   const router = useRouter()
 
@@ -148,52 +152,67 @@ export default function HomePage() {
             <input
               type="text"
               placeholder="Search restaurants, cafes, services..."
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white text-gray-900 border-0 focus:ring-2 focus:ring-[#ddc248]"
+              className="w-full pl-10 pr-12 py-3 rounded-xl bg-white text-gray-900 border-0 focus:ring-2 focus:ring-[#ddc248]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            {/* AI Recommendations Filter Icon */}
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <RestaurantFiltersModal onRecommendations={setRecommendations} />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="content-container py-6 bottom-nav-spacing">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Available Services</h2>
-          <span className="text-sm text-gray-600">{filteredServices.length} places</span>
-        </div>
+      <div className="content-container py-6 bottom-nav-spacing space-y-8">
+        {/* AI Recommendations Section */}
+        <RecommendedRestaurants
+          restaurants={recommendations}
+          onClear={() => setRecommendations([])}
+        />
 
-        {filteredServices.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Search className="w-12 h-12 mx-auto" />
+        {/* Regular Services Section */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              {recommendations.length > 0 ? "All Services" : "Available Services"}
+            </h2>
+            <span className="text-sm text-gray-600">{filteredServices.length} places</span>
+          </div>
+
+          {filteredServices.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search className="w-12 h-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {searchTerm ? "No services found" : "No services available"}
+              </h3>
+              <p className="text-gray-600">
+                {searchTerm
+                  ? `Try searching for something else`
+                  : "Check back later for available services"}
+              </p>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchTerm ? "No services found" : "No services available"}
-            </h3>
-            <p className="text-gray-600">
-              {searchTerm
-                ? `Try searching for something else`
-                : "Check back later for available services"}
-            </p>
-          </div>
-        ) : (
-          <div className="mobile-grid">
-            {filteredServices.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={{
-                  id: service.id,
-                  name: service.name,
-                  type: service.service_type,
-                  isOpen: service.is_open,
-                  estimatedWait: service.estimatedWait,
-                  queueCount: service.queueCount,
-                  lastUpdate: service.lastUpdate
-                }}
-              />
-            ))}
-          </div>
-        )}
+          ) : (
+            <div className="mobile-grid">
+              {filteredServices.map((service) => (
+                <ServiceCard
+                  key={service.id}
+                  service={{
+                    id: service.id,
+                    name: service.name,
+                    type: service.service_type,
+                    isOpen: service.is_open,
+                    estimatedWait: service.estimatedWait,
+                    queueCount: service.queueCount,
+                    lastUpdate: service.lastUpdate
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <BottomNav currentPage="home" userType="user" />

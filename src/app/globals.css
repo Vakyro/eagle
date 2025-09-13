@@ -147,18 +147,48 @@
     background-color: #c7ae3e;
   }
   .content-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8;
   }
   .service-card {
     @apply bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200;
   }
   .mobile-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4;
+  }
+  .responsive-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+  .responsive-spacing {
+    @apply space-y-4 sm:space-y-6;
+  }
+  .responsive-text {
+    @apply text-sm sm:text-base;
+  }
+  .responsive-padding {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+  .responsive-margin {
+    @apply mb-3 sm:mb-4 md:mb-6;
   }
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
   .bottom-nav-spacing {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+
+  /* Touch targets for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Better button styles for mobile */
+  .mobile-button {
+    @apply px-4 py-3 text-base font-medium rounded-lg;
+  }
+
+  /* Responsive modal */
+  .responsive-modal {
+    @apply w-full max-w-lg mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto;
   }
 }

@@ -1,5 +1,6 @@
 import { queueService, serviceService, notificationService, analyticsService } from './database'
 import { sendQueuePositionUpdate, sendQueueStatusUpdate } from './realtime'
+import { getAIPrediction, combineAIWithTraditional } from './ai-prediction'
 import type { QueueEntry, Service } from './supabase'
 
 export interface JoinQueueParams {
@@ -353,12 +354,15 @@ export async function cancelUserQueueEntry(queueEntryId: string, userId: string)
 export async function estimateWaitTime(serviceId: string): Promise<number> {
   try {
     const stats = await getQueueStats(serviceId)
-    const avgServiceTime = 15 // Default 15 minutes per customer
+    const totalQueueCount = stats.totalWaiting + stats.totalCalled
 
-    // Base wait time on current queue length and average service time
-    const estimatedTime = (stats.totalWaiting + stats.totalCalled) * avgServiceTime
+    // Obtener predicción de IA
+    const aiPrediction = await getAIPrediction()
 
-    return Math.max(5, estimatedTime) // Minimum 5 minutes
+    // Combinar predicción de IA con datos tradicionales de cola
+    const estimatedTime = combineAIWithTraditional(aiPrediction, totalQueueCount)
+
+    return estimatedTime
   } catch (error) {
     console.error('Error estimating wait time:', error)
     return 15 // Default fallback

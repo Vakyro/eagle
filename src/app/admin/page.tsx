@@ -6,6 +6,7 @@ import { Plus, Settings, Users, TrendingUp, Building, LogOut } from "lucide-reac
 import { BottomNav } from "@/components/bottom-nav"
 import { ServiceManagementCard } from "@/components/service-management-card"
 import { CreateServiceDialog } from "@/components/create-service-dialog"
+import { NgrokStatusCard } from "@/components/ngrok-config"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
@@ -178,6 +179,9 @@ export default function AdminPage() {
       </div>
 
       <div className="content-container py-6 space-y-4 bottom-nav-spacing">
+        {/* AI Configuration Card */}
+        <NgrokStatusCard />
+
         {establishment ? (
           <Card className="service-card">
             <div className="p-6">
