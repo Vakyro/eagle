@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,43 +11,46 @@ import { User, Bell, Shield, LogOut, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 export default function UserSettingsPage() {
-  const [userEmail, setUserEmail] = useState<string>("")
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { user, isLoading, logout } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    const userType = localStorage.getItem("userType")
-    const email = localStorage.getItem("userEmail")
+    if (isLoading) return
 
-    if (!userType || !email) {
+    if (!user) {
+      console.log('No hay usuario en settings, redirigiendo al login')
       router.push("/login")
       return
     }
 
-    if (userType !== "user") {
+    if (user.userType === "establishment") {
+      console.log('Usuario es establishment, redirigiendo al admin')
       router.push("/admin")
       return
     }
 
-    setUserEmail(email)
-    setIsAuthenticated(true)
-  }, [router])
+    console.log('Usuario válido en settings:', user.email)
+  }, [user, isLoading, router])
 
-  const handleLogout = () => {
-    localStorage.removeItem("userType")
-    localStorage.removeItem("userEmail")
+  const handleLogout = async () => {
+    console.log('Haciendo logout desde settings')
+    await logout()
     router.push("/login")
   }
 
-  if (!isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#fbfbfe] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2772ce] mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
     )
+  }
+
+  if (!user) {
+    return null // Se redirigirá al login
   }
 
   return (
@@ -77,8 +81,14 @@ export default function UserSettingsPage() {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block">Email</label>
-              <Input value={userEmail} disabled className="bg-gray-50" />
+              <Input value={user.email} disabled className="bg-gray-50" />
             </div>
+            {user.firstName && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Nombre</label>
+                <Input value={`${user.firstName} ${user.lastName}`} disabled className="bg-gray-50" />
+              </div>
+            )}
             <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">Update Profile</Button>
           </CardContent>
         </Card>

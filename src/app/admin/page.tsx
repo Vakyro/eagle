@@ -8,6 +8,7 @@ import { ServiceManagementCard } from "@/components/service-management-card"
 import { CreateServiceDialog } from "@/components/create-service-dialog"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface Establishment {
   id: string
@@ -23,26 +24,25 @@ interface Establishment {
 export default function AdminPage() {
   const [establishment, setEstablishment] = useState<Establishment | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  const [adminEmail, setAdminEmail] = useState<string>("")
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { user, isLoading, logout } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    const userType = localStorage.getItem("userType")
-    const email = localStorage.getItem("userEmail")
+    if (isLoading) return
 
-    if (!userType || !email) {
+    if (!user) {
+      console.log('No hay usuario en admin, redirigiendo al login')
       router.push("/login")
       return
     }
 
-    if (userType !== "admin") {
+    if (user.userType !== "establishment") {
+      console.log('Usuario no es establishment, redirigiendo al home')
       router.push("/")
       return
     }
 
-    setAdminEmail(email)
-    setIsAuthenticated(true)
+    console.log('Usuario establishment válido en admin:', user.businessName)
 
     // Load establishment from localStorage (in real app, this would be from API)
     const stored = localStorage.getItem("adminEstablishment")
@@ -63,11 +63,11 @@ export default function AdminPage() {
       setEstablishment(defaultEstablishment)
       localStorage.setItem("adminEstablishment", JSON.stringify(defaultEstablishment))
     }
-  }, [router])
+  }, [user, isLoading, router])
 
-  const handleLogout = () => {
-    localStorage.removeItem("userType")
-    localStorage.removeItem("userEmail")
+  const handleLogout = async () => {
+    console.log('Haciendo logout desde admin')
+    await logout()
     router.push("/login")
   }
 
@@ -90,16 +90,19 @@ export default function AdminPage() {
     localStorage.setItem("adminEstablishment", JSON.stringify(updated))
   }
 
-
-  if (!isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#fbfbfe] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-eagle-blue mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2772ce] mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
     )
+  }
+
+  if (!user) {
+    return null // Se redirigirá al login
   }
 
   const isEstablishmentOpen = establishment?.isOpen || false
@@ -116,7 +119,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">Business Dashboard</h1>
-                <p className="text-sm opacity-90">{adminEmail}</p>
+                <p className="text-sm opacity-90">{user.businessName || user.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

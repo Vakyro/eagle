@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { PWAProvider } from "@/components/pwa-provider"
 import { PWAHead } from "@/components/pwa-head"
+import { AuthProvider } from "@/contexts/AuthContext"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -65,11 +66,13 @@ export default function RootLayout({
         <PWAHead />
       </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
-        <PWAProvider>
-          <div className="app-container">
-            <Suspense fallback={null}>{children}</Suspense>
-          </div>
-        </PWAProvider>
+        <AuthProvider>
+          <PWAProvider>
+            <div className="app-container">
+              <Suspense fallback={null}>{children}</Suspense>
+            </div>
+          </PWAProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

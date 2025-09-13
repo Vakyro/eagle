@@ -8,25 +8,62 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/contexts/AuthContext"
+import { loginBasicUser, loginBasicEstablishment } from "@/lib/basic-auth"
 import Link from "next/link"
 
 export default function LoginPage() {
   const [userCredentials, setUserCredentials] = useState({ email: "", password: "" })
   const [adminCredentials, setAdminCredentials] = useState({ email: "", password: "" })
+  const [userLoading, setUserLoading] = useState(false)
+  const [adminLoading, setAdminLoading] = useState(false)
+  const [userError, setUserError] = useState("")
+  const [adminError, setAdminError] = useState("")
   const router = useRouter()
+  const { login } = useAuth()
 
-  const handleUserLogin = (e: React.FormEvent) => {
+  const handleUserLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    localStorage.setItem("userType", "user")
-    localStorage.setItem("userEmail", userCredentials.email)
-    router.push("/")
+    setUserLoading(true)
+    setUserError("")
+
+    try {
+      const result = await loginBasicUser(userCredentials.email, userCredentials.password)
+
+      if (result.success && result.sessionToken) {
+        await login(result.sessionToken)
+        router.push("/")
+      } else {
+        setUserError(result.error || "Error de login")
+      }
+    } catch (error: any) {
+      setUserError(`Error: ${error.message || 'Error desconocido'}`)
+      console.error("Error de login:", error)
+    } finally {
+      setUserLoading(false)
+    }
   }
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    localStorage.setItem("userType", "admin")
-    localStorage.setItem("userEmail", adminCredentials.email)
-    router.push("/admin")
+    setAdminLoading(true)
+    setAdminError("")
+
+    try {
+      const result = await loginBasicEstablishment(adminCredentials.email, adminCredentials.password)
+
+      if (result.success && result.sessionToken) {
+        await login(result.sessionToken)
+        router.push("/admin")
+      } else {
+        setAdminError(result.error || "Error de login")
+      }
+    } catch (error: any) {
+      setAdminError(`Error: ${error.message || 'Error desconocido'}`)
+      console.error("Error de login admin:", error)
+    } finally {
+      setAdminLoading(false)
+    }
   }
 
   return (
@@ -55,6 +92,11 @@ export default function LoginPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleUserLogin} className="space-y-4">
+                  {userError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                      {userError}
+                    </div>
+                  )}
                   <div>
                     <Input
                       type="email"
@@ -63,6 +105,7 @@ export default function LoginPage() {
                       onChange={(e) => setUserCredentials({ ...userCredentials, email: e.target.value })}
                       required
                       className="w-full"
+                      disabled={userLoading}
                     />
                   </div>
                   <div>
@@ -73,10 +116,11 @@ export default function LoginPage() {
                       onChange={(e) => setUserCredentials({ ...userCredentials, password: e.target.value })}
                       required
                       className="w-full"
+                      disabled={userLoading}
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-[#2772ce] hover:bg-blue-700 text-white">
-                    Sign In
+                  <Button type="submit" className="w-full bg-[#2772ce] hover:bg-blue-700 text-white" disabled={userLoading}>
+                    {userLoading ? "Signing In..." : "Sign In"}
                   </Button>
                   <div className="text-center">
                     <Link href="/register/user" className="text-[#2772ce] hover:underline text-sm">
@@ -96,6 +140,11 @@ export default function LoginPage() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleAdminLogin} className="space-y-4">
+                  {adminError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                      {adminError}
+                    </div>
+                  )}
                   <div>
                     <Input
                       type="email"
@@ -104,6 +153,7 @@ export default function LoginPage() {
                       onChange={(e) => setAdminCredentials({ ...adminCredentials, email: e.target.value })}
                       required
                       className="w-full"
+                      disabled={adminLoading}
                     />
                   </div>
                   <div>
@@ -114,10 +164,11 @@ export default function LoginPage() {
                       onChange={(e) => setAdminCredentials({ ...adminCredentials, password: e.target.value })}
                       required
                       className="w-full"
+                      disabled={adminLoading}
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-[#2772ce] hover:bg-blue-700 text-white">
-                    Sign In
+                  <Button type="submit" className="w-full bg-[#2772ce] hover:bg-blue-700 text-white" disabled={adminLoading}>
+                    {adminLoading ? "Signing In..." : "Sign In"}
                   </Button>
                   <div className="text-center">
                     <Link href="/register/establishment" className="text-[#2772ce] hover:underline text-sm">

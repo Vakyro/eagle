@@ -10,6 +10,7 @@ import { NotificationBanner } from "@/components/notification-banner"
 import { useQueueUpdates } from "@/hooks/use-queue-updates"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
 import Link from "next/link"
 
 interface QueueData {
@@ -25,31 +26,28 @@ interface QueueData {
 export default function MyQueuePage() {
   const [allQueues, setAllQueues] = useState<QueueData[]>([])
   const [activeQueue, setActiveQueue] = useState<QueueData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isQueueLoading, setIsQueueLoading] = useState(true)
+  const { user, isLoading } = useAuth()
   const router = useRouter()
 
   const { updates, requestNotificationPermission, clearUpdates } = useQueueUpdates(activeQueue)
 
   useEffect(() => {
-    const userType = localStorage.getItem("userType")
-    const email = localStorage.getItem("userEmail")
+    if (isLoading) return
 
-    if (!userType || !email) {
+    if (!user) {
       router.push("/login")
       return
     }
 
-    if (userType !== "user") {
+    if (user.userType === "establishment") {
       router.push("/admin")
       return
     }
-
-    setIsAuthenticated(true)
-  }, [router])
+  }, [user, isLoading, router])
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!user) return
 
     const loadQueueData = () => {
       const storedQueues = localStorage.getItem("userQueues")
@@ -69,7 +67,7 @@ export default function MyQueuePage() {
           setActiveQueue(singleQueue)
         }
       }
-      setIsLoading(false)
+      setIsQueueLoading(false)
     }
 
     loadQueueData()
@@ -83,7 +81,7 @@ export default function MyQueuePage() {
     return () => {
       window.removeEventListener("queueUpdate", handleQueueUpdate as EventListener)
     }
-  }, [isAuthenticated])
+  }, [user])
 
   const handleLeaveQueue = (queueToRemove: QueueData) => {
     const updatedQueues = allQueues.filter((q) => q.serviceId !== queueToRemove.serviceId)
@@ -127,15 +125,19 @@ export default function MyQueuePage() {
     }
   }
 
-  if (!isAuthenticated || isLoading) {
+  if (isLoading || isQueueLoading) {
     return (
       <div className="min-h-screen bg-[#fbfbfe] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2772ce] mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
         </div>
       </div>
     )
+  }
+
+  if (!user) {
+    return null // Se redirigirá al login
   }
 
   return (
