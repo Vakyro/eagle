@@ -42,6 +42,87 @@ export default function HomePage() {
     }
   }, [user, isLoading, router])
 
+  const createSampleEstablishments = async () => {
+    try {
+      console.log("🏗️ Creating sample establishments...")
+
+      const sampleEstablishments = [
+        {
+          business_name: "The Golden Spoon",
+          business_type: "restaurant",
+          owner_name: "Demo Owner",
+          email: "golden@demo.com",
+          phone: "(555) 123-4567",
+          address: "123 Main St, Downtown",
+          description: "A contemporary dining experience with globally inspired dishes and elegant ambiance.",
+          pictures: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop",
+          is_active: true,
+          password_hash: "demo"
+        },
+        {
+          business_name: "Sunset Café",
+          business_type: "café",
+          owner_name: "Demo Owner",
+          email: "sunset@demo.com",
+          phone: "(555) 234-5678",
+          address: "456 Oak Ave, Midtown",
+          description: "Cozy café with artisan coffee, fresh pastries, and a warm atmosphere perfect for work or relaxation.",
+          pictures: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=400&fit=crop",
+          is_active: true,
+          password_hash: "demo"
+        },
+        {
+          business_name: "Pizza Palace",
+          business_type: "restaurant",
+          owner_name: "Demo Owner",
+          email: "pizza@demo.com",
+          phone: "(555) 345-6789",
+          address: "789 Pine St, Uptown",
+          description: "Authentic wood-fired pizza with fresh ingredients and traditional recipes from Italy.",
+          pictures: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=400&fit=crop",
+          is_active: true,
+          password_hash: "demo"
+        },
+        {
+          business_name: "Brew & Bites",
+          business_type: "bar",
+          owner_name: "Demo Owner",
+          email: "brew@demo.com",
+          phone: "(555) 456-7890",
+          address: "321 Elm St, Old Town",
+          description: "Craft brewery and gastropub featuring local beers, artisan cocktails, and elevated pub food.",
+          pictures: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&h=400&fit=crop",
+          is_active: true,
+          password_hash: "demo"
+        },
+        {
+          business_name: "Sushi Zen",
+          business_type: "restaurant",
+          owner_name: "Demo Owner",
+          email: "sushi@demo.com",
+          phone: "(555) 567-8901",
+          address: "654 Bamboo Lane, Eastside",
+          description: "Traditional Japanese sushi bar with fresh fish, authentic preparation, and serene atmosphere.",
+          pictures: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800&h=400&fit=crop",
+          is_active: true,
+          password_hash: "demo"
+        }
+      ]
+
+      for (const establishment of sampleEstablishments) {
+        try {
+          await establishmentService.create(establishment)
+        } catch (error) {
+          console.warn("Sample establishment might already exist:", establishment.business_name)
+        }
+      }
+
+      console.log("✅ Sample establishments creation completed")
+    } catch (error) {
+      console.error("❌ Error creating sample establishments:", error)
+    }
+  }
+
   useEffect(() => {
     loadEstablishments()
   }, [])
@@ -49,7 +130,23 @@ export default function HomePage() {
   const loadEstablishments = async () => {
     try {
       setLoading(true)
-      const allEstablishments = await establishmentService.getAll({ is_active: true })
+      console.log("🔍 Loading establishments...")
+
+      let allEstablishments = await establishmentService.getAll()
+      console.log("📊 Establishments found:", allEstablishments?.length || 0, allEstablishments)
+
+      if (!allEstablishments || allEstablishments.length === 0) {
+        console.warn("⚠️ No establishments found in database")
+        // Try to create some sample establishments for demo
+        await createSampleEstablishments()
+        // Retry loading after creating samples
+        allEstablishments = await establishmentService.getAll()
+        if (!allEstablishments || allEstablishments.length === 0) {
+          setEstablishments([])
+          return
+        }
+        console.log("📊 Sample establishments created:", allEstablishments.length)
+      }
 
       // Add queue stats to each establishment
       const establishmentsWithStats = await Promise.all(
@@ -78,9 +175,11 @@ export default function HomePage() {
         })
       )
 
+      console.log("✅ Establishments with stats:", establishmentsWithStats.length)
       setEstablishments(establishmentsWithStats)
     } catch (error) {
-      console.error("Error loading establishments:", error)
+      console.error("❌ Error loading establishments:", error)
+      setEstablishments([])
     } finally {
       setLoading(false)
     }
