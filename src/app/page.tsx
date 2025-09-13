@@ -2,26 +2,26 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ServiceCard } from "@/components/service-card"
+import { EstablishmentCard } from "@/components/establishment-card"
 import { BottomNav } from "@/components/bottom-nav"
 import { RestaurantFiltersModal } from "@/components/restaurant-filters"
 import { RecommendedRestaurants } from "@/components/recommended-restaurants"
 import { useAuth } from "@/contexts/AuthContext"
-import { serviceService } from "@/lib/database"
+import { establishmentService } from "@/lib/database"
 import { estimateWaitTime } from "@/lib/queue-management"
-import type { Service } from "@/lib/supabase"
+import type { Establishment } from "@/lib/supabase"
 import type { RecommendedRestaurant } from "@/lib/restaurant-recommendations"
 import { Search, MapPin, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-interface ServiceWithStats extends Service {
+interface EstablishmentWithStats extends Establishment {
   queueCount: number
   estimatedWait: number
   lastUpdate: string
 }
 
 export default function HomePage() {
-  const [services, setServices] = useState<ServiceWithStats[]>([])
+  const [establishments, setEstablishments] = useState<EstablishmentWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [recommendations, setRecommendations] = useState<RecommendedRestaurant[]>([])
@@ -43,33 +43,33 @@ export default function HomePage() {
   }, [user, isLoading, router])
 
   useEffect(() => {
-    loadServices()
+    loadEstablishments()
   }, [])
 
-  const loadServices = async () => {
+  const loadEstablishments = async () => {
     try {
       setLoading(true)
-      const allServices = await serviceService.getAll({ is_open: true })
+      const allEstablishments = await establishmentService.getAll({ is_active: true })
 
-      // Add queue stats to each service
-      const servicesWithStats = await Promise.all(
-        allServices.map(async (service) => {
+      // Add queue stats to each establishment
+      const establishmentsWithStats = await Promise.all(
+        allEstablishments.map(async (establishment) => {
           try {
-            const estimatedWait = await estimateWaitTime(service.id)
+            // Use establishment ID for queue estimation
+            const estimatedWait = await estimateWaitTime(establishment.id)
             // For now, we'll use a simple queue count calculation
-            // In a real implementation, you'd get this from the queue entries
             const queueCount = Math.floor(estimatedWait / 15) || 0
 
             return {
-              ...service,
+              ...establishment,
               queueCount,
               estimatedWait,
               lastUpdate: new Date().toISOString()
             }
           } catch (error) {
-            console.error(`Error getting stats for service ${service.id}:`, error)
+            console.error(`Error getting stats for establishment ${establishment.id}:`, error)
             return {
-              ...service,
+              ...establishment,
               queueCount: 0,
               estimatedWait: 0,
               lastUpdate: new Date().toISOString()
@@ -78,9 +78,9 @@ export default function HomePage() {
         })
       )
 
-      setServices(servicesWithStats)
+      setEstablishments(establishmentsWithStats)
     } catch (error) {
-      console.error("Error loading services:", error)
+      console.error("Error loading establishments:", error)
     } finally {
       setLoading(false)
     }
@@ -95,12 +95,11 @@ export default function HomePage() {
     }
   }
 
-  // Filter services based on search term
-  const filteredServices = services.filter(service =>
-    service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.service_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (service.establishment?.business_name &&
-     service.establishment.business_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Filter establishments based on search term
+  const filteredEstablishments = establishments.filter(establishment =>
+    establishment.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    establishment.business_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (establishment.address && establishment.address.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   if (isLoading || loading) {
@@ -151,7 +150,7 @@ export default function HomePage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search restaurants, cafes, services..."
+              placeholder="Search restaurants, cafes, businesses..."
               className="w-full pl-10 pr-12 py-3 rounded-xl bg-white text-gray-900 border-0 focus:ring-2 focus:ring-[#ddc248]"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -175,39 +174,31 @@ export default function HomePage() {
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">
-              {recommendations.length > 0 ? "All Services" : "Available Services"}
+              {recommendations.length > 0 ? "All Establishments" : "Available Establishments"}
             </h2>
-            <span className="text-sm text-gray-600">{filteredServices.length} places</span>
+            <span className="text-sm text-gray-600">{filteredEstablishments.length} places</span>
           </div>
 
-          {filteredServices.length === 0 ? (
+          {filteredEstablishments.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <Search className="w-12 h-12 mx-auto" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchTerm ? "No services found" : "No services available"}
+                {searchTerm ? "No establishments found" : "No establishments available"}
               </h3>
               <p className="text-gray-600">
                 {searchTerm
                   ? `Try searching for something else`
-                  : "Check back later for available services"}
+                  : "Check back later for available establishments"}
               </p>
             </div>
           ) : (
             <div className="mobile-grid">
-              {filteredServices.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={{
-                    id: service.id,
-                    name: service.name,
-                    type: service.service_type,
-                    isOpen: service.is_open,
-                    estimatedWait: service.estimatedWait,
-                    queueCount: service.queueCount,
-                    lastUpdate: service.lastUpdate
-                  }}
+              {filteredEstablishments.map((establishment) => (
+                <EstablishmentCard
+                  key={establishment.id}
+                  establishment={establishment}
                 />
               ))}
             </div>
