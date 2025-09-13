@@ -1,103 +1,135 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ServiceCard } from "@/components/service-card"
+import { BottomNav } from "@/components/bottom-nav"
+import { Search, MapPin, User, LogOut } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+// Mock data for services
+const mockServices = [
+  {
+    id: "1",
+    name: "Bella Vista Restaurant",
+    type: "Restaurant",
+    isOpen: true,
+    estimatedWait: 15,
+    queueCount: 8,
+    lastUpdate: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    name: "Coffee Corner",
+    type: "Café",
+    isOpen: true,
+    estimatedWait: 5,
+    queueCount: 3,
+    lastUpdate: new Date().toISOString(),
+  },
+  {
+    id: "3",
+    name: "Pizza Palace",
+    type: "Restaurant",
+    isOpen: false,
+    estimatedWait: 0,
+    queueCount: 0,
+    lastUpdate: new Date().toISOString(),
+  },
+]
+
+export default function HomePage() {
+  const [userEmail, setUserEmail] = useState<string>("")
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const userType = localStorage.getItem("userType")
+    const email = localStorage.getItem("userEmail")
+
+    if (!userType || !email) {
+      router.push("/login")
+      return
+    }
+
+    if (userType === "admin") {
+      router.push("/admin")
+      return
+    }
+
+    setUserEmail(email)
+    setIsAuthenticated(true)
+  }, [router])
+
+  const handleLogout = () => {
+    localStorage.removeItem("userType")
+    localStorage.removeItem("userEmail")
+    router.push("/login")
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#fbfbfe] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="bg-blue-600 text-white">
+        <div className="content-container py-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm opacity-90">Welcome back</p>
+                <p className="font-semibold">{userEmail}</p>
+              </div>
+            </div>
+            <Button onClick={handleLogout} variant="ghost" size="sm" className="text-white hover:bg-white/20">
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4">
+            <MapPin className="w-5 h-5" />
+            <div>
+              <p className="text-sm opacity-90">Deliver to</p>
+              <p className="font-semibold">Current Location</p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search restaurants, cafes..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white text-gray-900 border-0 focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="content-container py-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Nearby Services</h2>
+          <span className="text-sm text-gray-600">{mockServices.length} places</span>
+        </div>
+
+        <div className="mobile-grid">
+          {mockServices.map((service) => (
+            <ServiceCard key={service.id} service={service} />
+          ))}
+        </div>
+      </div>
+
+      <BottomNav currentPage="home" userType="user" />
+    </>
+  )
 }
