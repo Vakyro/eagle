@@ -34,6 +34,9 @@ export default function AIQueuePage({ params }: AIQueuePageProps) {
   const [queueCount, setQueueCount] = useState(0)
   const [isJoined, setIsJoined] = useState(false)
   const [queuePosition, setQueuePosition] = useState(0)
+  const [estimatedWaitTime, setEstimatedWaitTime] = useState(15)
+  const [queueNumber, setQueueNumber] = useState<number | null>(null)
+  const [maxCapacity] = useState(50) // Fixed capacity for AI restaurants
 
   useEffect(() => {
     if (isLoading) return
@@ -56,47 +59,77 @@ export default function AIQueuePage({ params }: AIQueuePageProps) {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ')
 
+    // Generate varied restaurant data based on name
+    const nameHash = params.slug.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    const restaurantTypes = ["Restaurant", "Bistro", "Café", "Bar & Grill", "Fine Dining", "Casual Dining"]
+    const cuisines = ["Italian", "Mexican", "American", "Asian Fusion", "Mediterranean", "French", "International"]
+    const atmospheres = ["Cozy", "Upscale Casual", "Trendy", "Romantic", "Family-Friendly", "Modern", "Traditional"]
+    const priceRanges = ["$", "$$", "$$$"]
+
+    const featureOptions = [
+      ["Outdoor Seating", "Wine Bar", "Reservations"],
+      ["Live Music", "Happy Hour", "Private Dining"],
+      ["Craft Cocktails", "Vegan Options", "Late Night"],
+      ["Family-Friendly", "Pet-Friendly", "Takeout"],
+      ["Rooftop", "Brunch", "WiFi"]
+    ]
+
     const mockRestaurant: MockRestaurant = {
       name: restaurantName,
-      type: "Restaurant",
-      cuisine: "International",
-      description: "Experience exceptional dining with globally inspired dishes and elegant ambiance. Perfect for any occasion.",
-      atmosphere: "Upscale Casual",
-      priceRange: "$$",
-      features: ["Outdoor Seating", "Wine Bar", "Reservations"],
+      type: restaurantTypes[nameHash % restaurantTypes.length],
+      cuisine: cuisines[nameHash % cuisines.length],
+      description: `Experience exceptional ${cuisines[nameHash % cuisines.length].toLowerCase()} cuisine with ${atmospheres[nameHash % atmospheres.length].toLowerCase()} ambiance. Perfect for any occasion with authentic flavors and quality service.`,
+      atmosphere: atmospheres[nameHash % atmospheres.length],
+      priceRange: priceRanges[nameHash % priceRanges.length],
+      features: featureOptions[nameHash % featureOptions.length],
       estimatedWait: "15-25 min",
-      rating: 4.3,
-      distance: "0.4 mi"
+      rating: 3.8 + (nameHash % 7) * 0.1, // Rating between 3.8 and 4.4
+      distance: `0.${2 + (nameHash % 8)} mi` // Distance between 0.2 and 0.9 mi
     }
 
     setRestaurant(mockRestaurant)
 
-    // Generate random queue count
-    setQueueCount(Math.floor(Math.random() * 20) + 5)
+    // Generate random queue count and estimated wait time
+    const randomQueueCount = Math.floor(Math.random() * 20) + 5
+    setQueueCount(randomQueueCount)
+    setEstimatedWaitTime(randomQueueCount * 3 + Math.floor(Math.random() * 10) + 10) // 3 min per person + random variance
   }, [user, isLoading, router, params.slug])
 
   const handleJoinQueue = () => {
-    if (!isJoined) {
+    if (!isJoined && queueCount < maxCapacity) {
+      const newPosition = queueCount + 1
+      const newQueueNumber = Math.floor(Math.random() * 1000) + 100 // Random queue number like real system
+      const newWaitTime = newPosition * 3 + Math.floor(Math.random() * 5) + 5
+
       setIsJoined(true)
-      setQueuePosition(queueCount + 1)
+      setQueuePosition(newPosition)
+      setQueueNumber(newQueueNumber)
       setQueueCount(prev => prev + 1)
+      setEstimatedWaitTime(newWaitTime)
 
       // Store in localStorage for persistence
       localStorage.setItem(`ai-queue-${params.slug}`, JSON.stringify({
         joined: true,
-        position: queueCount + 1,
+        position: newPosition,
+        queueNumber: newQueueNumber,
+        estimatedWait: newWaitTime,
         joinedAt: new Date().toISOString()
       }))
+
+      // Show success message
+      console.log(`🎉 Joined queue #${newQueueNumber} at position ${newPosition}`)
     }
   }
 
   const handleLeaveQueue = () => {
     setIsJoined(false)
     setQueuePosition(0)
+    setQueueNumber(null)
     setQueueCount(prev => Math.max(0, prev - 1))
 
     // Remove from localStorage
     localStorage.removeItem(`ai-queue-${params.slug}`)
+    console.log('👋 Left the queue')
   }
 
   // Check if user was already in queue
@@ -107,11 +140,44 @@ export default function AIQueuePage({ params }: AIQueuePageProps) {
         const data = JSON.parse(stored)
         setIsJoined(data.joined)
         setQueuePosition(data.position)
+        setQueueNumber(data.queueNumber)
+        if (data.estimatedWait) {
+          setEstimatedWaitTime(data.estimatedWait)
+        }
       } catch (error) {
         console.error("Error parsing stored queue data:", error)
       }
     }
   }, [params.slug])
+
+  // Simulate queue movement (optional enhancement)
+  useEffect(() => {
+    if (isJoined && queuePosition > 1) {
+      const interval = setInterval(() => {
+        // Sometimes move up in queue (simulate real queue movement)
+        if (Math.random() < 0.3) { // 30% chance every 30 seconds
+          setQueuePosition(prev => {
+            const newPos = Math.max(1, prev - 1)
+            const newWait = Math.max(5, estimatedWaitTime - 3)
+            setEstimatedWaitTime(newWait)
+
+            // Update localStorage
+            const stored = localStorage.getItem(`ai-queue-${params.slug}`)
+            if (stored) {
+              const data = JSON.parse(stored)
+              data.position = newPos
+              data.estimatedWait = newWait
+              localStorage.setItem(`ai-queue-${params.slug}`, JSON.stringify(data))
+            }
+
+            return newPos
+          })
+        }
+      }, 30000) // Check every 30 seconds
+
+      return () => clearInterval(interval)
+    }
+  }, [isJoined, queuePosition, estimatedWaitTime, params.slug])
 
   if (isLoading) {
     return (
@@ -227,7 +293,7 @@ export default function AIQueuePage({ params }: AIQueuePageProps) {
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <Clock className="w-5 h-5 text-blue-600" />
                 </div>
-                <div className="text-2xl font-bold text-[#050315]">{restaurant.estimatedWait}</div>
+                <div className="text-2xl font-bold text-[#050315]">{estimatedWaitTime} min</div>
                 <div className="text-sm text-gray-600">estimated wait</div>
               </div>
 
@@ -240,16 +306,55 @@ export default function AIQueuePage({ params }: AIQueuePageProps) {
               </div>
             </div>
 
+            {/* Queue Capacity Bar */}
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4">
+              <div className="flex justify-between items-center text-sm mb-2">
+                <span className="text-gray-600">Queue Capacity</span>
+                <span className="font-medium text-[#050315]">
+                  {queueCount}/{maxCapacity}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(queueCount / maxCapacity) * 100}%` }}
+                />
+              </div>
+              {queueCount > maxCapacity * 0.8 && (
+                <p className="text-xs text-orange-600 mt-1">
+                  Queue is getting full!
+                </p>
+              )}
+            </div>
+
             {isJoined ? (
               <div className="space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="font-semibold text-green-800">You're in line!</span>
                   </div>
-                  <p className="text-green-700">
-                    Position #{queuePosition} in queue
-                  </p>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-green-700">Queue Number:</span>
+                      <span className="font-bold text-green-800">#{queueNumber}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-green-700">Position:</span>
+                      <span className="font-bold text-green-800">#{queuePosition}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-green-700">Estimated Wait:</span>
+                      <span className="font-bold text-green-800">{estimatedWaitTime} minutes</span>
+                    </div>
+                  </div>
+
+                  {queuePosition === 1 && (
+                    <div className="mt-3 p-2 bg-yellow-100 border border-yellow-200 rounded text-sm text-yellow-800">
+                      🎉 You're next! Please be ready to be served.
+                    </div>
+                  )}
                 </div>
 
                 <Button
@@ -261,14 +366,23 @@ export default function AIQueuePage({ params }: AIQueuePageProps) {
                 </Button>
               </div>
             ) : (
-              <Button
-                onClick={handleJoinQueue}
-                className="w-full bg-[#2772ce] hover:bg-[#1e5ba8] text-white"
-                size="lg"
-              >
-                <Users className="w-5 h-5 mr-2" />
-                Join Queue
-              </Button>
+              queueCount >= maxCapacity ? (
+                <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="font-semibold text-red-800 mb-1">Queue Full</p>
+                  <p className="text-sm text-red-600">
+                    This restaurant has reached maximum capacity. Please try again later.
+                  </p>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleJoinQueue}
+                  className="w-full bg-[#2772ce] hover:bg-[#1e5ba8] text-white"
+                  size="lg"
+                >
+                  <Users className="w-5 h-5 mr-2" />
+                  Join Queue
+                </Button>
+              )
             )}
           </div>
         </Card>

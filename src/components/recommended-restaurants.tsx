@@ -153,8 +153,15 @@ function RestaurantCard({ restaurant }: { restaurant: RecommendedRestaurant }) {
           className="w-full bg-[#2772ce] hover:bg-[#1e5ba8] text-white"
           size="sm"
           onClick={() => {
-            // Create a temporary queue for AI recommended restaurants
-            const queueUrl = `/queue/ai-${restaurant.name.toLowerCase().replace(/\s+/g, '-')}`
+            // Create a clean slug for the restaurant name
+            const slug = restaurant.name.toLowerCase()
+              .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+              .replace(/\s+/g, '-') // Replace spaces with hyphens
+              .replace(/-+/g, '-') // Replace multiple hyphens with single
+              .trim()
+
+            const queueUrl = `/ai-queue/${slug}`
+            console.log('Navigating to:', queueUrl)
             window.location.href = queueUrl
           }}
         >
