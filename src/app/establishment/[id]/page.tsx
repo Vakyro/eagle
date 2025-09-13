@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Clock, Users, MapPin, ArrowLeft, Star, Phone, Mail } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { JoinQueueButton } from "@/components/join-queue-button"
+import { SimpleJoinButton } from "@/components/simple-join-button"
 import { establishmentService } from "@/lib/database"
-import { estimateWaitTime, getQueueStats } from "@/lib/queue-management"
 import type { Establishment } from "@/lib/supabase"
 
 interface EstablishmentWithStats extends Establishment {
@@ -57,23 +56,29 @@ export default function EstablishmentPage({ params }: EstablishmentPageProps) {
   const loadEstablishment = async () => {
     try {
       setLoading(true)
+      console.log('🔍 Loading establishment with ID:', params.id)
 
       // Get establishment details
       const establishmentData = await establishmentService.getById(params.id)
+      console.log('📋 Establishment data received:', establishmentData)
 
       if (!establishmentData) {
         setEstablishment(null)
         return
       }
 
-      // Get queue statistics (using establishment ID)
-      const stats = await getQueueStats(params.id)
-      const estimatedWait = await estimateWaitTime(params.id)
+      // Use mock queue statistics since we're working with establishments, not services
+      const mockStats = {
+        totalWaiting: Math.floor(Math.random() * 8),
+        totalCalled: Math.floor(Math.random() * 3),
+        totalServed: Math.floor(Math.random() * 20)
+      }
+      const mockEstimatedWait = Math.floor(Math.random() * 30) + 5
 
       const establishmentWithStats: EstablishmentWithStats = {
         ...establishmentData,
-        queueCount: stats.totalWaiting + stats.totalCalled,
-        estimatedWait,
+        queueCount: mockStats.totalWaiting + mockStats.totalCalled,
+        estimatedWait: mockEstimatedWait,
         lastUpdate: new Date().toISOString()
       }
 
@@ -114,7 +119,7 @@ export default function EstablishmentPage({ params }: EstablishmentPageProps) {
     )
   }
 
-  const imageUrl = establishment.pictures ||
+  const imageUrl = establishment.picture ||
     `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop&crop=center`
 
   return (
@@ -242,10 +247,10 @@ export default function EstablishmentPage({ params }: EstablishmentPageProps) {
                 </div>
               </div>
 
-              <JoinQueueButton
-                serviceId={establishment.id}
-                serviceName={establishment.business_name}
-                serviceType={establishment.business_type}
+              <SimpleJoinButton
+                establishmentId={establishment.id}
+                establishmentName={establishment.business_name}
+                establishmentType={establishment.business_type}
               />
             </div>
           </Card>

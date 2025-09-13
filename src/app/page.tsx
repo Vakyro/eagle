@@ -23,24 +23,11 @@ interface EstablishmentWithStats extends Establishment {
 export default function HomePage() {
   const [establishments, setEstablishments] = useState<EstablishmentWithStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [recommendations, setRecommendations] = useState<RecommendedRestaurant[]>([])
   const { user, isLoading, logout: authLogout } = useAuth()
   const router = useRouter()
-
-  useEffect(() => {
-    if (isLoading) return
-
-    if (!user) {
-      router.push("/login")
-      return
-    }
-
-    if (user.userType === "establishment") {
-      router.push("/admin")
-      return
-    }
-  }, [user, isLoading, router])
 
   const createSampleEstablishments = async () => {
     try {
@@ -55,7 +42,7 @@ export default function HomePage() {
           phone: "(555) 123-4567",
           address: "123 Main St, Downtown",
           description: "A contemporary dining experience with globally inspired dishes and elegant ambiance.",
-          pictures: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop",
+          picture: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop",
           is_active: true,
           password_hash: "demo"
         },
@@ -67,7 +54,7 @@ export default function HomePage() {
           phone: "(555) 234-5678",
           address: "456 Oak Ave, Midtown",
           description: "Cozy café with artisan coffee, fresh pastries, and a warm atmosphere perfect for work or relaxation.",
-          pictures: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=400&fit=crop",
+          picture: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=400&fit=crop",
           is_active: true,
           password_hash: "demo"
         },
@@ -79,7 +66,6 @@ export default function HomePage() {
           phone: "(555) 345-6789",
           address: "789 Pine St, Uptown",
           description: "Authentic wood-fired pizza with fresh ingredients and traditional recipes from Italy.",
-          pictures: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=400&fit=crop",
           is_active: true,
           password_hash: "demo"
         },
@@ -91,7 +77,6 @@ export default function HomePage() {
           phone: "(555) 456-7890",
           address: "321 Elm St, Old Town",
           description: "Craft brewery and gastropub featuring local beers, artisan cocktails, and elevated pub food.",
-          pictures: "https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=800&h=400&fit=crop",
           is_active: true,
           password_hash: "demo"
         },
@@ -103,58 +88,90 @@ export default function HomePage() {
           phone: "(555) 567-8901",
           address: "654 Bamboo Lane, Eastside",
           description: "Traditional Japanese sushi bar with fresh fish, authentic preparation, and serene atmosphere.",
-          pictures: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=800&h=400&fit=crop",
           is_active: true,
           password_hash: "demo"
         }
       ]
 
+      let createdCount = 0
       for (const establishment of sampleEstablishments) {
         try {
           await establishmentService.create(establishment)
+          createdCount++
+          console.log(`✅ Created: ${establishment.business_name}`)
         } catch (error) {
-          console.warn("Sample establishment might already exist:", establishment.business_name)
+          console.warn(`⚠️ Skipped (might exist): ${establishment.business_name}`, error)
         }
       }
 
-      console.log("✅ Sample establishments creation completed")
+      console.log(`✅ Sample establishments creation completed. Created: ${createdCount}`)
+      return createdCount > 0
     } catch (error) {
       console.error("❌ Error creating sample establishments:", error)
+      throw error
     }
   }
 
-  useEffect(() => {
-    loadEstablishments()
-  }, [])
-
   const loadEstablishments = async () => {
     try {
-      setLoading(true)
-      console.log("🔍 Loading establishments...")
+      console.log("🔍 Starting to load establishments...")
+      setError(null)
 
+      // Step 1: Try to get existing establishments
+      console.log("📡 Fetching establishments from database...")
       let allEstablishments = await establishmentService.getAll()
-      console.log("📊 Establishments found:", allEstablishments?.length || 0, allEstablishments)
+      
+      console.log("📊 Raw database result:")
+      console.log("  - Type:", typeof allEstablishments)
+      console.log("  - Is Array:", Array.isArray(allEstablishments))
+      console.log("  - Length:", allEstablishments?.length || 0)
+      console.log("  - Data:", allEstablishments)
 
+      // Step 2: Handle empty results
       if (!allEstablishments || allEstablishments.length === 0) {
         console.warn("⚠️ No establishments found in database")
-        // Try to create some sample establishments for demo
-        await createSampleEstablishments()
-        // Retry loading after creating samples
-        allEstablishments = await establishmentService.getAll()
+        console.log("🏗️ Attempting to create sample data...")
+        
+        const created = await createSampleEstablishments()
+        
+        if (created) {
+          // Wait a moment for database to process
+          console.log("⏳ Waiting for database to process...")
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
+          // Retry loading
+          console.log("🔄 Retrying to fetch establishments...")
+          allEstablishments = await establishmentService.getAll()
+          console.log("📊 After retry - Length:", allEstablishments?.length || 0)
+        }
+        
         if (!allEstablishments || allEstablishments.length === 0) {
+          console.error("❌ Still no establishments after creating samples")
           setEstablishments([])
+          setError("No establishments found. Please check your database connection.")
           return
         }
-        console.log("📊 Sample establishments created:", allEstablishments.length)
       }
 
-      // Add queue stats to each establishment
+      console.log(`✅ Found ${allEstablishments.length} establishments`)
+
+      // Step 3: Add queue stats to each establishment
+      console.log("📊 Adding queue statistics...")
       const establishmentsWithStats = await Promise.all(
-        allEstablishments.map(async (establishment) => {
+        allEstablishments.map(async (establishment, index) => {
           try {
-            // Use establishment ID for queue estimation
-            const estimatedWait = await estimateWaitTime(establishment.id)
-            // For now, we'll use a simple queue count calculation
+            console.log(`  Processing ${index + 1}/${allEstablishments.length}: ${establishment.business_name}`)
+            
+            // Add timeout to estimateWaitTime to prevent hanging
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout')), 5000)
+            )
+            
+            const estimatedWait = await Promise.race([
+              estimateWaitTime(establishment.id),
+              timeoutPromise
+            ]) as number
+            
             const queueCount = Math.floor(estimatedWait / 15) || 0
 
             return {
@@ -164,24 +181,100 @@ export default function HomePage() {
               lastUpdate: new Date().toISOString()
             }
           } catch (error) {
-            console.error(`Error getting stats for establishment ${establishment.id}:`, error)
+            console.warn(`⚠️ Error getting stats for ${establishment.business_name}:`, error)
+            // Return with default values if stats fail
             return {
               ...establishment,
-              queueCount: 0,
-              estimatedWait: 0,
+              queueCount: Math.floor(Math.random() * 5), // Random for demo
+              estimatedWait: Math.floor(Math.random() * 30) + 10, // Random 10-40 min
               lastUpdate: new Date().toISOString()
             }
           }
         })
       )
 
-      console.log("✅ Establishments with stats:", establishmentsWithStats.length)
+      console.log(`✅ Successfully processed ${establishmentsWithStats.length} establishments`)
+      console.log('🔍 First establishment data:', establishmentsWithStats[0])
       setEstablishments(establishmentsWithStats)
+      
     } catch (error) {
-      console.error("❌ Error loading establishments:", error)
+      console.error("❌ Critical error loading establishments:", error)
+      console.error("❌ Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      })
+      
       setEstablishments([])
-    } finally {
+      setError(`Failed to load establishments: ${error.message}`)
+    }
+  }
+
+  // SINGLE useEffect to handle everything in proper order
+  useEffect(() => {
+    const initializePage = async () => {
+      console.log("🚀 Initializing HomePage...")
+      console.log("  - isLoading:", isLoading)
+      console.log("  - user:", user ? "present" : "null")
+      console.log("  - userType:", user?.userType)
+
+      // Wait for auth to finish loading
+      if (isLoading) {
+        console.log("⏳ Waiting for authentication...")
+        return
+      }
+
+      // Check authentication
+      if (!user) {
+        console.log("🚫 No user found, redirecting to login...")
+        router.push("/login")
+        return
+      }
+
+      // Check user type
+      if (user.userType === "establishment") {
+        console.log("🏢 Establishment user, redirecting to admin...")
+        router.push("/admin")
+        return
+      }
+
+      console.log("✅ User authenticated, loading establishments...")
+      
+      // Only load establishments if user is properly authenticated
+      setLoading(true)
+      await loadEstablishments()
       setLoading(false)
+    }
+
+    initializePage()
+  }, [user, isLoading, router])
+
+  const testSupabaseConnection = async () => {
+    console.log("🧪 MANUAL TEST: Testing Supabase connection...")
+    
+    try {
+      // Test 1: Verificar variables de entorno
+      console.log("📋 Environment variables check:")
+      console.log("  - URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing")
+      console.log("  - ANON KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✅ Set" : "❌ Missing")
+      
+      // Test 2: Query a través del service
+      console.log("📋 Service query test:")
+      const serviceResult = await establishmentService.getAll()
+      console.log("  - Service result:", serviceResult)
+      console.log("  - Service result type:", typeof serviceResult)
+      console.log("  - Service result length:", serviceResult?.length || 0)
+      
+      return serviceResult
+      
+    } catch (error) {
+      console.error("❌ Manual test error:", error)
+      console.error("❌ Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      })
+      return null
     }
   }
 
@@ -201,19 +294,39 @@ export default function HomePage() {
     (establishment.address && establishment.address.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
+  // Show loading state
   if (isLoading || loading) {
     return (
       <div className="min-h-screen bg-[#fbfbfe] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2772ce] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">
+            {isLoading ? "Authenticating..." : "Loading establishments..."}
+          </p>
         </div>
       </div>
     )
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#fbfbfe] flex items-center justify-center">
+        <div className="text-center p-6">
+          <div className="text-red-500 mb-4">❌</div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} className="bg-[#2772ce]">
+            Retry
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect cases (will return null while redirecting)
   if (!user) {
-    return null // Will redirect to login
+    return null
   }
 
   return (
@@ -254,7 +367,6 @@ export default function HomePage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            {/* AI Recommendations Filter Icon */}
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <RestaurantFiltersModal onRecommendations={setRecommendations} />
             </div>
@@ -263,13 +375,11 @@ export default function HomePage() {
       </div>
 
       <div className="content-container py-6 bottom-nav-spacing space-y-8">
-        {/* AI Recommendations Section */}
         <RecommendedRestaurants
           restaurants={recommendations}
           onClear={() => setRecommendations([])}
         />
 
-        {/* Regular Services Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">
@@ -291,6 +401,17 @@ export default function HomePage() {
                   ? `Try searching for something else`
                   : "Check back later for available establishments"}
               </p>
+              {!searchTerm && (
+                <Button 
+                  onClick={() => {
+                    setLoading(true)
+                    loadEstablishments().finally(() => setLoading(false))
+                  }} 
+                  className="mt-4 bg-[#2772ce]"
+                >
+                  Refresh
+                </Button>
+              )}
             </div>
           ) : (
             <div className="mobile-grid">

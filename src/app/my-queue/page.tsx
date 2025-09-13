@@ -50,21 +50,41 @@ export default function MyQueuePage() {
     if (!user) return
 
     const loadQueueData = () => {
-      const storedQueues = localStorage.getItem("userQueues")
-      if (storedQueues) {
-        const queues = JSON.parse(storedQueues)
-        setAllQueues(queues)
-        // Set the most recent queue as active
-        if (queues.length > 0) {
-          setActiveQueue(queues[queues.length - 1])
+      // Check for new establishment queues first
+      const storedEstablishmentQueues = localStorage.getItem("establishmentQueues")
+      if (storedEstablishmentQueues) {
+        const queues = JSON.parse(storedEstablishmentQueues)
+        // Convert establishment queues to compatible format
+        const compatibleQueues = queues.map((q: any) => ({
+          serviceId: q.establishmentId,
+          serviceName: q.establishmentName,
+          serviceType: q.establishmentType,
+          joinedAt: q.joinedAt,
+          position: q.position,
+          estimatedWait: q.estimatedWait,
+          qrCode: q.qrCode
+        }))
+        setAllQueues(compatibleQueues)
+        if (compatibleQueues.length > 0) {
+          setActiveQueue(compatibleQueues[compatibleQueues.length - 1])
         }
       } else {
-        // Backward compatibility - check for single queue
-        const storedSingle = localStorage.getItem("currentQueue")
-        if (storedSingle) {
-          const singleQueue = JSON.parse(storedSingle)
-          setAllQueues([singleQueue])
-          setActiveQueue(singleQueue)
+        // Check legacy userQueues
+        const storedQueues = localStorage.getItem("userQueues")
+        if (storedQueues) {
+          const queues = JSON.parse(storedQueues)
+          setAllQueues(queues)
+          if (queues.length > 0) {
+            setActiveQueue(queues[queues.length - 1])
+          }
+        } else {
+          // Backward compatibility - check for single queue
+          const storedSingle = localStorage.getItem("currentQueue")
+          if (storedSingle) {
+            const singleQueue = JSON.parse(storedSingle)
+            setAllQueues([singleQueue])
+            setActiveQueue(singleQueue)
+          }
         }
       }
       setIsQueueLoading(false)
@@ -86,7 +106,17 @@ export default function MyQueuePage() {
   const handleLeaveQueue = (queueToRemove: QueueData) => {
     const updatedQueues = allQueues.filter((q) => q.serviceId !== queueToRemove.serviceId)
     setAllQueues(updatedQueues)
+
+    // Update both storage formats
     localStorage.setItem("userQueues", JSON.stringify(updatedQueues))
+
+    // Also update establishmentQueues if it exists
+    const storedEstablishmentQueues = localStorage.getItem("establishmentQueues")
+    if (storedEstablishmentQueues) {
+      const establishmentQueues = JSON.parse(storedEstablishmentQueues)
+      const updatedEstablishmentQueues = establishmentQueues.filter((q: any) => q.establishmentId !== queueToRemove.serviceId)
+      localStorage.setItem("establishmentQueues", JSON.stringify(updatedEstablishmentQueues))
+    }
 
     // Update active queue
     if (activeQueue?.serviceId === queueToRemove.serviceId) {

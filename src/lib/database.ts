@@ -83,11 +83,15 @@ export const establishmentService = {
   },
 
   async getById(id: string) {
+    console.log('🔎 EstablishmentService.getById called with ID:', id, 'type:', typeof id)
+
     const { data, error } = await supabase
       .from('establishments')
       .select('*')
       .eq('id', id)
       .single()
+
+    console.log('📊 Supabase getById result:', { data, error })
 
     if (error) throw error
     return data

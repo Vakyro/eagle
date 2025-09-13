@@ -16,8 +16,15 @@ interface EstablishmentCardProps {
 }
 
 export function EstablishmentCard({ establishment }: EstablishmentCardProps) {
+  // Debug log
+  console.log('🏢 EstablishmentCard data:', {
+    id: establishment.id,
+    name: establishment.business_name,
+    type: typeof establishment.id
+  })
+
   // Generate a fallback image URL if no picture is provided
-  const imageUrl = establishment.pictures ||
+  const imageUrl = establishment.picture ||
     `https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=300&fit=crop&crop=center`
 
   const formatEstimatedWait = (minutes: number) => {

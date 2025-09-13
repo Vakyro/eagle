@@ -30,12 +30,13 @@ export interface User {
 export interface Establishment {
   id: string
   business_name: string
-  business_type: 'restaurant' | 'clinic' | 'salon' | 'bank' | 'government' | 'other'
+  business_type: 'restaurant' | 'clinic' | 'salon' | 'bank' | 'government' | 'other' | 'café' | 'bar'
   owner_name: string
   email: string
   phone: string
   address: string
   description?: string
+  picture?: string
   password_hash: string
   is_active: boolean
   created_at: string
