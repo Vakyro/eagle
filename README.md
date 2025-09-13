@@ -20,5 +20,3 @@ Permite a los usuarios registrarse en la fila de un establecimiento de manera di
 - **Base de datos**: PostgreSQL (UUID como identificador único).
 - **Frontend Web**: React.
 - **App Móvil**: React Native o Flutter.
-- **Seguridad**: JWT + bcrypt para autenticación y contraseñas.
-- **Notificaciones**: Firebase Cloud Messaging o Twilio (para SMS).
